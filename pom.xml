@@ -328,7 +328,13 @@
     <repositories>
         <repository>
             <id>nexus</id>
-            <url>http://98.81.128.93:8081/repository/vpro-maven-central/</url>
+            <url>http://98.81.128.93:8081/repository/vpro-maven-group/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
         </repository>
     </repositories>
 
