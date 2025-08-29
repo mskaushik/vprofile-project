@@ -22,11 +22,30 @@ pipeline {
             steps {
                 sh 'mvn -s settings.xml -DskipTests clean install'
             }
+            post {
+                success {
+                    echo 'Now Archiving...'
+                    archiveArtifacts artifacts: '**/target/*.war'
+                }
+            }
         }
+
         stage('Deploy to Nexus'){
             steps {
                 sh 'mvn -s settings.xml -DskipTests deploy'
             }
+        }
+    }
+
+    post {
+        always {
+            echo 'Build and deployment completed'
+        }
+        success {
+            echo 'Successfully built and deployed to Nexus'
+        }
+        failure {
+            echo 'Build or deployment failed'
         }
     }
 }
