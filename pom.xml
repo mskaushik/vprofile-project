@@ -326,9 +326,22 @@
         </plugins>
     </build>
     <repositories>
-    <repository>
-      <id>${NEXUS-GRP-REPO}</id>
-      <url>http://${NEXUSIP}:${NEXUSPORT}/repository/${NEXUS-GRP-REPO}/</url>
-    </repository>
-  </repositories>
+        <repository>
+            <id>nexus</id>
+            <url>http://98.81.128.93:8081/repository/vpro-maven-central/</url>
+        </repository>
+    </repositories>
+
+    <distributionManagement>
+        <repository>
+            <id>nexus</id>
+            <name>vprofile Release Repository</name>
+            <url>http://98.81.128.93:8081/repository/vprofile-release/</url>
+        </repository>
+        <snapshotRepository>
+            <id>nexus</id>
+            <name>vprofile Snapshot Repository</name>
+            <url>http://98.81.128.93:8081/repository/vprofile-snapshot/</url>
+        </snapshotRepository>
+    </distributionManagement>
 </project>

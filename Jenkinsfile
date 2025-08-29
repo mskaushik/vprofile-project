@@ -23,5 +23,10 @@ pipeline {
                 sh 'mvn -s settings.xml -DskipTests clean install'
             }
         }
+        stage('Deploy to Nexus'){
+            steps {
+                sh 'mvn -s settings.xml -DskipTests deploy'
+            }
+        }
     }
 }
