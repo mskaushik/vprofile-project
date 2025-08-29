@@ -1,4 +1,11 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml versi  <mirrors>
+    <mirror>
+      <id>nexus</id>
+      <name>nexus</name>
+      <url>http://98.81.128.93:8081/repository/vpro-maven-central/</url>
+      <mirrorOf>*</mirrorOf>
+    </mirror>
+  </mirrors> encoding="UTF-8"?>
 <settings xmlns="http://maven.apache.org/SETTINGS/1.1.0"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.1.0 http://maven.apache.org/xsd/settings-1.1.0.xsd">
@@ -13,7 +20,7 @@
     <mirror>
       <id>nexus</id>
       <name>nexus</name>
-      <url>http://98.81.128.93:8081/repository/maven-public/</url>
+      <url>http://98.81.128.93:8081/repository/vpro-maven-central/</url>
       <mirrorOf>*</mirrorOf>
     </mirror>
   </mirrors>
