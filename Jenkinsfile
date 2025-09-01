@@ -35,7 +35,18 @@ pipeline {
 
         stage('Test'){
             steps {
-                sh 'mvn -s settings.xml test'
+                sh """
+                    mvn -s settings.xml test \
+                    -Dmaven.repo.local=.m2 \
+                    -DSNAP_REPO=${SNAP_REPO} \
+                    -DRELEASE_REPO=${RELEASE_REPO} \
+                    -DCENTRAL_REPO=${CENTRAL_REPO} \
+                    -DNEXUS_USER=${NEXUS_USER} \
+                    -DNEXUS_PASS=${NEXUS_PASS} \
+                    -DNEXUSIP=${NEXUSIP} \
+                    -DNEXUSPORT=${NEXUSPORT} \
+                    -DNEXUS_GRP_REPO=${NEXUS_GRP_REPO}
+                """
             }
             post {
                 success {
@@ -49,7 +60,18 @@ pipeline {
         
         stage('Checkstyle Analysis'){
             steps {
-                sh 'mvn -s settings.xml checkstyle:check'
+                sh """
+                    mvn -s settings.xml checkstyle:check \
+                    -Dmaven.repo.local=.m2 \
+                    -DSNAP_REPO=${SNAP_REPO} \
+                    -DRELEASE_REPO=${RELEASE_REPO} \
+                    -DCENTRAL_REPO=${CENTRAL_REPO} \
+                    -DNEXUS_USER=${NEXUS_USER} \
+                    -DNEXUS_PASS=${NEXUS_PASS} \
+                    -DNEXUSIP=${NEXUSIP} \
+                    -DNEXUSPORT=${NEXUSPORT} \
+                    -DNEXUS_GRP_REPO=${NEXUS_GRP_REPO}
+                """
             }
             post {
                 success {
