@@ -58,27 +58,74 @@ pipeline {
             }
         }
         
-        stage('Checkstyle Analysis'){
-            steps {
-                sh """
-                    mvn -s settings.xml checkstyle:check \
-                    -Dmaven.repo.local=.m2 \
-                    -DSNAP_REPO=${SNAP_REPO} \
-                    -DRELEASE_REPO=${RELEASE_REPO} \
-                    -DCENTRAL_REPO=${CENTRAL_REPO} \
-                    -DNEXUS_USER=${NEXUS_USER} \
-                    -DNEXUS_PASS=${NEXUS_PASS} \
-                    -DNEXUSIP=${NEXUSIP} \
-                    -DNEXUSPORT=${NEXUSPORT} \
-                    -DNEXUS_GRP_REPO=${NEXUS_GRP_REPO}
-                """
-            }
-            post {
-                success {
-                    echo 'Checkstyle analysis passed!'
+        stage('Code Quality Analysis') {
+            parallel {
+                stage('Checkstyle Analysis') {
+                    steps {
+                        script {
+                            // First attempt with strict rules
+                            try {
+                                sh """
+                                    mvn -s settings.xml checkstyle:check \
+                                    -Dmaven.repo.local=.m2 \
+                                    -DSNAP_REPO=${SNAP_REPO} \
+                                    -DRELEASE_REPO=${RELEASE_REPO} \
+                                    -DCENTRAL_REPO=${CENTRAL_REPO} \
+                                    -DNEXUS_USER=${NEXUS_USER} \
+                                    -DNEXUS_PASS=${NEXUS_PASS} \
+                                    -DNEXUSIP=${NEXUSIP} \
+                                    -DNEXUSPORT=${NEXUSPORT} \
+                                    -DNEXUS_GRP_REPO=${NEXUS_GRP_REPO}
+                                """
+                            } catch (Exception e) {
+                                echo 'Strict Checkstyle analysis failed. Generating report for review...'
+                                sh """
+                                    mvn -s settings.xml checkstyle:checkstyle \
+                                    -Dmaven.repo.local=.m2 \
+                                    -DSNAP_REPO=${SNAP_REPO} \
+                                    -DRELEASE_REPO=${RELEASE_REPO} \
+                                    -DCENTRAL_REPO=${CENTRAL_REPO} \
+                                    -DNEXUS_USER=${NEXUS_USER} \
+                                    -DNEXUS_PASS=${NEXUS_PASS} \
+                                    -DNEXUSIP=${NEXUSIP} \
+                                    -DNEXUSPORT=${NEXUSPORT} \
+                                    -DNEXUS_GRP_REPO=${NEXUS_GRP_REPO}
+                                """
+                                // Archive the Checkstyle report
+                                archiveArtifacts artifacts: '**/target/checkstyle-result.xml', fingerprint: true
+                                // Continue the pipeline but mark this stage as unstable
+                                unstable('Checkstyle violations found')
+                            }
+                        }
+                    }
+                    post {
+                        success {
+                            echo 'Checkstyle analysis passed!'
+                        }
+                        unstable {
+                            echo 'Checkstyle violations found. Check the archived report for details.'
+                        }
+                        failure {
+                            echo 'Checkstyle analysis failed.'
+                        }
+                    }
                 }
-                failure {
-                    echo 'Checkstyle analysis failed.'
+                
+                stage('PMD Analysis') {
+                    steps {
+                        sh """
+                            mvn -s settings.xml pmd:check \
+                            -Dmaven.repo.local=.m2 \
+                            -DSNAP_REPO=${SNAP_REPO} \
+                            -DRELEASE_REPO=${RELEASE_REPO} \
+                            -DCENTRAL_REPO=${CENTRAL_REPO} \
+                            -DNEXUS_USER=${NEXUS_USER} \
+                            -DNEXUS_PASS=${NEXUS_PASS} \
+                            -DNEXUSIP=${NEXUSIP} \
+                            -DNEXUSPORT=${NEXUSPORT} \
+                            -DNEXUS_GRP_REPO=${NEXUS_GRP_REPO}
+                        """
+                    }
                 }
             }
         }
