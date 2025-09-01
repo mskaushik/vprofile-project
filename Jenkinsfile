@@ -35,7 +35,7 @@ pipeline {
 
         stage('Test'){
             steps {
-                sh 'mvn -s settings.xmltest'
+                sh 'mvn -s settings.xml test'
             }
             post {
                 success {
