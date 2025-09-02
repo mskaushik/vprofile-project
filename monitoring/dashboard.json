@@ -1,0 +1,48 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "VProfile Pipeline & Infrastructure Dashboard",
+    "panels": [
+      {
+        "title": "Jenkins Pipeline Status",
+        "type": "stat",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "jenkins_job_last_successful_build_total{job=\"vprofile\"}"
+          }
+        ]
+      },
+      {
+        "title": "EC2 CPU Usage",
+        "type": "graph",
+        "datasource": "CloudWatch",
+        "targets": [
+          {
+            "expr": "aws_ec2_cpu_utilization_average"
+          }
+        ]
+      },
+      {
+        "title": "EBS Volume Usage",
+        "type": "gauge",
+        "datasource": "CloudWatch",
+        "targets": [
+          {
+            "expr": "aws_ebs_volume_read_bytes_sum"
+          }
+        ]
+      },
+      {
+        "title": "Build Duration",
+        "type": "graph",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "jenkins_job_duration_milliseconds{job=\"vprofile\"}"
+          }
+        ]
+      }
+    ]
+  }
+}
