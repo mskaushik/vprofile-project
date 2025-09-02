@@ -26,7 +26,7 @@ pipeline {
         stage('Check Disk Space') {
             steps {
                 script {
-                    def diskSpace = sh(script: 'df -h / | tail -1 | awk \'{print $5}\' | sed \'s/%//\'', returnStdout: true).trim()
+                    def diskSpace = sh(script: "df -h / | tail -1 | awk '{print \$5}' | sed 's/%//'", returnStdout: true).trim()
                     if (diskSpace.toInteger() > 80) {
                         error "Disk space is critically low (${diskSpace}%). Aborting build."
                     } else if (diskSpace.toInteger() > 70) {
@@ -112,7 +112,7 @@ pipeline {
         stage('Cleanup') {
             steps {
                 cleanWs()
-                sh """
+                sh '''
                     echo "Cleaning up workspace..."
                     # Remove build artifacts
                     rm -rf target/
@@ -134,7 +134,7 @@ pipeline {
                     echo "Cleanup completed at $(date)" > cleanup-report.txt
                     echo "Current disk usage:" >> cleanup-report.txt
                     df -h / >> cleanup-report.txt
-                """
+                '''
                 archiveArtifacts artifacts: 'cleanup-report.txt', allowEmptyArchive: true
             }
         }
