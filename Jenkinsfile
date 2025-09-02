@@ -96,6 +96,17 @@ pipeline {
             }
         }
 
-
+        stage('Cleanup') {
+            steps {
+                cleanWs()
+                sh """
+                    echo "Cleaning up workspace..."
+                    rm -rf target/
+                    rm -rf .m2/
+                    echo "Displaying disk space after cleanup:"
+                    df -h
+                """
+            }
+        }
     }
 }
