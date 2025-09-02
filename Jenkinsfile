@@ -20,6 +20,8 @@ pipeline {
         NEXUS_LOGIN = 'nexus_login'
         SONARSERVER = 'sonarserver'
         SONARSCANNER = 'sonarscanner'
+        SLACK_CHANNEL = 'jenkins-cicd'
+        SLACK_TOKEN = credentials('slack-token')
     }
 
     stages {
@@ -137,6 +139,64 @@ pipeline {
                 '''
                 archiveArtifacts artifacts: 'cleanup-report.txt', allowEmptyArchive: true
             }
+        }
+    }
+    
+    post {
+        success {
+            slackSend(
+                channel: "${SLACK_CHANNEL}",
+                color: 'good',
+                message: """
+                    :white_check_mark: Pipeline Succeeded! 
+                    Job: ${env.JOB_NAME}
+                    Build Number: ${env.BUILD_NUMBER}
+                    Build URL: ${env.BUILD_URL}
+                    Time: ${currentBuild.durationString}
+                """
+            )
+        }
+        failure {
+            slackSend(
+                channel: "${SLACK_CHANNEL}",
+                color: 'danger',
+                message: """
+                    :x: Pipeline Failed! 
+                    Job: ${env.JOB_NAME}
+                    Build Number: ${env.BUILD_NUMBER}
+                    Failed Stage: ${currentBuild.result}
+                    Build URL: ${env.BUILD_URL}
+                    Time: ${currentBuild.durationString}
+                """
+            )
+        }
+        unstable {
+            slackSend(
+                channel: "${SLACK_CHANNEL}",
+                color: 'warning',
+                message: """
+                    :warning: Pipeline Unstable! 
+                    Job: ${env.JOB_NAME}
+                    Build Number: ${env.BUILD_NUMBER}
+                    Build URL: ${env.BUILD_URL}
+                    Time: ${currentBuild.durationString}
+                """
+            )
+        }
+        changed {
+            slackSend(
+                channel: "${SLACK_CHANNEL}",
+                color: 'warning',
+                message: """
+                    :arrows_counterclockwise: Pipeline Status Changed!
+                    Previous: ${currentBuild.previousBuild?.result}
+                    Current: ${currentBuild.result}
+                    Job: ${env.JOB_NAME}
+                    Build Number: ${env.BUILD_NUMBER}
+                    Build URL: ${env.BUILD_URL}
+                    Time: ${currentBuild.durationString}
+                """
+            )
         }
     }
 }
