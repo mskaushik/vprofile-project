@@ -23,6 +23,19 @@ pipeline {
     }
 
     stages {
+        stage('Check Disk Space') {
+            steps {
+                script {
+                    def diskSpace = sh(script: 'df -h / | tail -1 | awk \'{print $5}\' | sed \'s/%//\'', returnStdout: true).trim()
+                    if (diskSpace.toInteger() > 80) {
+                        error "Disk space is critically low (${diskSpace}%). Aborting build."
+                    } else if (diskSpace.toInteger() > 70) {
+                        echo "Warning: Disk space is getting high (${diskSpace}%)"
+                    }
+                }
+            }
+        }
+
         stage('Build'){
             steps {
                 sh 'mvn -s settings.xml -DskipTests install'
@@ -101,11 +114,28 @@ pipeline {
                 cleanWs()
                 sh """
                     echo "Cleaning up workspace..."
+                    # Remove build artifacts
                     rm -rf target/
                     rm -rf .m2/
-                    echo "Displaying disk space after cleanup:"
-                    df -h
+                    
+                    # Clean up Docker (if using)
+                    docker system prune -f || true
+                    
+                    # Clean up old logs
+                    sudo find /var/log/jenkins -name "*.log.*" -type f -mtime +7 -delete || true
+                    
+                    # Clean up temp files
+                    sudo rm -rf /tmp/jenkins* || true
+                    
+                    echo "Disk space after cleanup:"
+                    df -h /
+                    
+                    # Archive cleanup report
+                    echo "Cleanup completed at $(date)" > cleanup-report.txt
+                    echo "Current disk usage:" >> cleanup-report.txt
+                    df -h / >> cleanup-report.txt
                 """
+                archiveArtifacts artifacts: 'cleanup-report.txt', allowEmptyArchive: true
             }
         }
     }
