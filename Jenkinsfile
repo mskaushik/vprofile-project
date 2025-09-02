@@ -29,9 +29,9 @@ pipeline {
             steps {
                 script {
                     def diskSpace = sh(script: "df -h / | tail -1 | awk '{print \$5}' | sed 's/%//'", returnStdout: true).trim()
-                    if (diskSpace.toInteger() > 50) {
+                    if (diskSpace.toInteger() > 80) {
                         error "Disk space is critically low (${diskSpace}%). Aborting build."
-                    } else if (diskSpace.toInteger() > 40) {
+                    } else if (diskSpace.toInteger() > 70) {
                         echo "Warning: Disk space is getting high (${diskSpace}%)"
                     }
                 }
