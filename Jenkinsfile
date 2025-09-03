@@ -35,23 +35,22 @@ pipeline {
                     if (diskSpace.toInteger() > 80) {
                         echo "Disk space is critically high (${diskSpace}%). Running cleanup..."
                         sh '''
-                            # Clean up Docker
-                            docker system prune -af --volumes || true
+                            # Clean up Jenkins workspace
+                            cd /var/lib/jenkins/workspace/
+                            find . -type d -mtime +7 -exec rm -rf {} + || true
                             
-                            # Clean up old logs
-                            sudo find /var/log -type f -name "*.gz" -delete || true
-                            sudo find /var/log -type f -name "*.1" -delete || true
-                            sudo journalctl --vacuum-time=2d || true
+                            # Clean up Jenkins builds
+                            cd /var/lib/jenkins/jobs/
+                            find . -type d -name "builds" -exec sh -c 'cd "{}" && ls -t | tail -n +10 | xargs rm -rf' \\; || true
                             
-                            # Clean up package manager cache
-                            sudo apt-get clean || true
-                            sudo apt-get autoremove -y || true
+                            # Clean up temp files in Jenkins home
+                            rm -rf /var/lib/jenkins/tmp/* || true
                             
-                            # Clean up temporary files
-                            sudo rm -rf /tmp/* || true
+                            # Clean Maven repository
+                            rm -rf /var/lib/jenkins/.m2/repository/* || true
                             
-                            # Clean up old Jenkins workspaces
-                            find /var/lib/jenkins/workspace/ -type d -mtime +7 -exec rm -rf {} + || true
+                            # Clean workspace specific temp files
+                            rm -rf target/ .m2/ || true
                             
                             echo "Cleanup completed. Current disk space:"
                             df -h /
