@@ -18,6 +18,8 @@ pipeline {
         NEXUSPORT = '8081'
         NEXUS_GRP_REPO = 'vprofile-maven-group'
         NEXUS_LOGIN = 'nexus_login'
+        GRAFANA_CREDS = credentials('grafana-admin-creds')
+        AWS_CREDS = credentials('aws-credentials')
         MONITORING_HOST = '10.0.11.22'  // Replace with your monitoring server IP
         GRAFANA_CREDS = credentials('grafana-admin-creds')
         AWS_CREDS = credentials('aws-monitoring-creds')
@@ -216,60 +218,15 @@ pipeline {
     }
     
     post {
+        always {
+            echo 'Pipeline execution completed'
+            cleanWs()
+        }
         success {
-            slackSend(
-                channel: "${SLACK_CHANNEL}",
-                color: 'good',
-                message: """
-                    :white_check_mark: Pipeline Succeeded! 
-                    Job: ${env.JOB_NAME}
-                    Build Number: ${env.BUILD_NUMBER}
-                    Build URL: ${env.BUILD_URL}
-                    Time: ${currentBuild.durationString}
-                """
-            )
+            echo 'Pipeline succeeded!'
         }
         failure {
-            slackSend(
-                channel: "${SLACK_CHANNEL}",
-                color: 'danger',
-                message: """
-                    :x: Pipeline Failed! 
-                    Job: ${env.JOB_NAME}
-                    Build Number: ${env.BUILD_NUMBER}
-                    Failed Stage: ${currentBuild.result}
-                    Build URL: ${env.BUILD_URL}
-                    Time: ${currentBuild.durationString}
-                """
-            )
-        }
-        unstable {
-            slackSend(
-                channel: "${SLACK_CHANNEL}",
-                color: 'warning',
-                message: """
-                    :warning: Pipeline Unstable! 
-                    Job: ${env.JOB_NAME}
-                    Build Number: ${env.BUILD_NUMBER}
-                    Build URL: ${env.BUILD_URL}
-                    Time: ${currentBuild.durationString}
-                """
-            )
-        }
-        changed {
-            slackSend(
-                channel: "${SLACK_CHANNEL}",
-                color: 'warning',
-                message: """
-                    :arrows_counterclockwise: Pipeline Status Changed!
-                    Previous: ${currentBuild.previousBuild?.result}
-                    Current: ${currentBuild.result}
-                    Job: ${env.JOB_NAME}
-                    Build Number: ${env.BUILD_NUMBER}
-                    Build URL: ${env.BUILD_URL}
-                    Time: ${currentBuild.durationString}
-                """
-            )
+            echo 'Pipeline failed!'
         }
     }
 }
