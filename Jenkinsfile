@@ -18,6 +18,9 @@ pipeline {
         NEXUSPORT = '8081'
         NEXUS_GRP_REPO = 'vprofile-maven-group'
         NEXUS_LOGIN = 'nexus_login'
+        MONITORING_HOST = '10.0.11.22'  // Replace with your monitoring server IP
+        GRAFANA_CREDS = credentials('grafana-admin-creds')
+        AWS_CREDS = credentials('aws-monitoring-creds')
         SONARSERVER = 'sonarserver'
         SONARSCANNER = 'sonarscanner'
         SLACK_CHANNEL = 'jenkins-cicd'
@@ -111,6 +114,76 @@ pipeline {
             }
         }
 
+        stage('Setup Monitoring') {
+            steps {
+                script {
+                    // Clone monitoring branch
+                    sh '''
+                        MONITOR_DIR="monitoring-setup"
+                        if [ -d "$MONITOR_DIR" ]; then
+                            rm -rf "$MONITOR_DIR"
+                        fi
+                        git clone -b monitoring-setup https://github.com/mskaushik/vprofile-project.git "$MONITOR_DIR"
+                        cd "$MONITOR_DIR/monitoring"
+                        
+                        # Create data directories
+                        mkdir -p data/grafana data/prometheus
+                        
+                        # Update prometheus.yml with Jenkins IP
+                        sed -i "s/your-jenkins-ip:8080/${JENKINS_URL}/g" prometheus.yml
+                        
+                        # Create .env file
+                        cat << EOF > .env
+                        AWS_ACCESS_KEY_ID=${AWS_CREDS_USR}
+                        AWS_SECRET_ACCESS_KEY=${AWS_CREDS_PSW}
+                        AWS_REGION=us-east-1
+                        GRAFANA_ADMIN_PASSWORD=${GRAFANA_CREDS_PSW}
+                        EOF
+                        
+                        # Start monitoring stack
+                        docker-compose down || true
+                        docker-compose up -d
+                        
+                        # Wait for Grafana to be ready
+                        echo "Waiting for Grafana to start..."
+                        for i in {1..30}; do
+                            if curl -s http://localhost:3000/api/health; then
+                                break
+                            fi
+                            sleep 5
+                        done
+                        
+                        # Configure Grafana using API
+                        # Add Prometheus data source
+                        curl -X POST -H "Content-Type: application/json" -d '{
+                            "name":"Prometheus",
+                            "type":"prometheus",
+                            "url":"http://prometheus:9090",
+                            "access":"proxy",
+                            "isDefault":true
+                        }' http://admin:${GRAFANA_CREDS_PSW}@localhost:3000/api/datasources
+                        
+                        # Add CloudWatch data source
+                        curl -X POST -H "Content-Type: application/json" -d '{
+                            "name":"CloudWatch",
+                            "type":"cloudwatch",
+                            "jsonData": {
+                                "authType": "credentials",
+                                "defaultRegion": "us-east-1"
+                            },
+                            "secureJsonData": {
+                                "accessKey": "'${AWS_CREDS_USR}'",
+                                "secretKey": "'${AWS_CREDS_PSW}'"
+                            }
+                        }' http://admin:${GRAFANA_CREDS_PSW}@localhost:3000/api/datasources
+                        
+                        # Import dashboard
+                        curl -X POST -H "Content-Type: application/json" -d @dashboard.json http://admin:${GRAFANA_CREDS_PSW}@localhost:3000/api/dashboards/db
+                    '''
+                }
+            }
+        }
+        
         stage('Cleanup') {
             steps {
                 cleanWs()
