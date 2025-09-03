@@ -19,10 +19,7 @@ pipeline {
         NEXUS_GRP_REPO = 'vprofile-maven-group'
         NEXUS_LOGIN = 'nexus_login'
         GRAFANA_CREDS = credentials('grafana-admin-creds')
-        AWS_CREDS = credentials('aws-credentials')
         MONITORING_HOST = '10.0.11.22'  // Replace with your monitoring server IP
-        GRAFANA_CREDS = credentials('grafana-admin-creds')
-        AWS_CREDS = credentials('aws-monitoring-creds')
         SONARSERVER = 'sonarserver'
         SONARSCANNER = 'sonarscanner'
         SLACK_CHANNEL = 'jenkins-cicd'
@@ -136,9 +133,6 @@ pipeline {
                         
                         # Create .env file
                         cat << EOF > .env
-                        AWS_ACCESS_KEY_ID=${AWS_CREDS_USR}
-                        AWS_SECRET_ACCESS_KEY=${AWS_CREDS_PSW}
-                        AWS_REGION=us-east-1
                         GRAFANA_ADMIN_PASSWORD=${GRAFANA_CREDS_PSW}
                         EOF
                         
@@ -163,20 +157,6 @@ pipeline {
                             "url":"http://prometheus:9090",
                             "access":"proxy",
                             "isDefault":true
-                        }' http://admin:${GRAFANA_CREDS_PSW}@localhost:3000/api/datasources
-                        
-                        # Add CloudWatch data source
-                        curl -X POST -H "Content-Type: application/json" -d '{
-                            "name":"CloudWatch",
-                            "type":"cloudwatch",
-                            "jsonData": {
-                                "authType": "credentials",
-                                "defaultRegion": "us-east-1"
-                            },
-                            "secureJsonData": {
-                                "accessKey": "'${AWS_CREDS_USR}'",
-                                "secretKey": "'${AWS_CREDS_PSW}'"
-                            }
                         }' http://admin:${GRAFANA_CREDS_PSW}@localhost:3000/api/datasources
                         
                         # Import dashboard
