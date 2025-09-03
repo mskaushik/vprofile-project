@@ -19,7 +19,8 @@ pipeline {
         NEXUS_GRP_REPO = 'vprofile-maven-group'
         NEXUS_LOGIN = 'nexus_login'
         GRAFANA_CREDS = credentials('grafana-admin-creds')
-        MONITORING_HOST = '10.0.11.22'  // Replace with your monitoring server IP
+        JENKINS_URL = 'http://52.201.213.49:8080'
+        MONITORING_HOST = '10.0.11.22'  // Monitoring on the same network as Nexus
         SONARSERVER = 'sonarserver'
         SONARSCANNER = 'sonarscanner'
         SLACK_CHANNEL = 'jenkins-cicd'
@@ -129,7 +130,7 @@ pipeline {
                         mkdir -p data/grafana data/prometheus
                         
                         # Update prometheus.yml with Jenkins IP
-                        sed -i "s/your-jenkins-ip:8080/${JENKINS_URL}/g" prometheus.yml
+                        sed -i "s/your-jenkins-ip:8080/52.201.213.49:8080/g" prometheus.yml
                         
                         # Create .env file
                         cat << EOF > .env
