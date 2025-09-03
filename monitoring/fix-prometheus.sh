@@ -36,3 +36,10 @@ docker network inspect monitoring_monitoring
 
 echo "Container IP addresses:"
 docker inspect -f '{{.Name}} - {{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker-compose ps -q)
+
+echo "Testing Prometheus endpoints..."
+for endpoint in "" "/graph" "/metrics" "/targets"; do
+    echo "Testing http://localhost:9090${endpoint}"
+    curl -IL "http://localhost:9090${endpoint}"
+    echo "-------------------"
+done
