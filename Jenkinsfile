@@ -33,7 +33,37 @@ pipeline {
                 script {
                     def diskSpace = sh(script: "df -h / | tail -1 | awk '{print \$5}' | sed 's/%//'", returnStdout: true).trim()
                     if (diskSpace.toInteger() > 80) {
-                        error "Disk space is critically low (${diskSpace}%). Aborting build."
+                        echo "Disk space is critically high (${diskSpace}%). Running cleanup..."
+                        sh '''
+                            # Clean up Docker
+                            docker system prune -af --volumes || true
+                            
+                            # Clean up old logs
+                            sudo find /var/log -type f -name "*.gz" -delete || true
+                            sudo find /var/log -type f -name "*.1" -delete || true
+                            sudo journalctl --vacuum-time=2d || true
+                            
+                            # Clean up package manager cache
+                            sudo apt-get clean || true
+                            sudo apt-get autoremove -y || true
+                            
+                            # Clean up temporary files
+                            sudo rm -rf /tmp/* || true
+                            
+                            # Clean up old Jenkins workspaces
+                            find /var/lib/jenkins/workspace/ -type d -mtime +7 -exec rm -rf {} + || true
+                            
+                            echo "Cleanup completed. Current disk space:"
+                            df -h /
+                        '''
+                        
+                        // Check disk space again after cleanup
+                        def newDiskSpace = sh(script: "df -h / | tail -1 | awk '{print \$5}' | sed 's/%//'", returnStdout: true).trim()
+                        if (newDiskSpace.toInteger() > 80) {
+                            error "Disk space is still critically high (${newDiskSpace}%) after cleanup. Manual intervention required."
+                        } else {
+                            echo "Cleanup successful. New disk usage: ${newDiskSpace}%"
+                        }
                     } else if (diskSpace.toInteger() > 70) {
                         echo "Warning: Disk space is getting high (${diskSpace}%)"
                     }
