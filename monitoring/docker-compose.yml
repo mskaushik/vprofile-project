@@ -5,7 +5,7 @@ services:
     user: root
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./data/prometheus:/prometheus
+      - prometheus_data:/prometheus
     ports:
       - "9090:9090"
     command:
