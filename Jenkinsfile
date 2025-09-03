@@ -32,39 +32,52 @@ pipeline {
             steps {
                 script {
                     def diskSpace = sh(script: "df -h / | tail -1 | awk '{print \$5}' | sed 's/%//'", returnStdout: true).trim()
-                    if (diskSpace.toInteger() > 80) {
+                    if (diskSpace.toInteger() > 85) {
                         echo "Disk space is critically high (${diskSpace}%). Running cleanup..."
                         sh '''
-                            # Clean up Jenkins workspace
-                            cd /var/lib/jenkins/workspace/
-                            find . -type d -mtime +7 -exec rm -rf {} + || true
-                            
-                            # Clean up Jenkins builds
-                            cd /var/lib/jenkins/jobs/
-                            find . -type d -name "builds" -exec sh -c 'cd "{}" && ls -t | tail -n +10 | xargs rm -rf' \\; || true
-                            
-                            # Clean up temp files in Jenkins home
-                            rm -rf /var/lib/jenkins/tmp/* || true
-                            
-                            # Clean Maven repository
-                            rm -rf /var/lib/jenkins/.m2/repository/* || true
-                            
-                            # Clean workspace specific temp files
-                            rm -rf target/ .m2/ || true
-                            
-                            echo "Cleanup completed. Current disk space:"
+                            echo "Space usage before cleanup:"
                             df -h /
+                            
+                            echo "\nLargest directories in Jenkins home:"
+                            du -h /var/lib/jenkins/* 2>/dev/null | sort -hr | head -n 5
+                            
+                            echo "\nCleaning up old workspaces..."
+                            cd /var/lib/jenkins/workspace/
+                            find . -maxdepth 1 -type d -mtime +3 -exec rm -rf {} + || true
+                            
+                            echo "\nCleaning up old builds..."
+                            cd /var/lib/jenkins/jobs/
+                            find . -type d -name "builds" -exec sh -c 'cd "{}" && ls -t | tail -n +5 | xargs rm -rf' \\; || true
+                            
+                            echo "\nCleaning up Jenkins temp and cache..."
+                            rm -rf /var/lib/jenkins/tmp/* || true
+                            rm -rf /var/lib/jenkins/.gradle/caches/* || true
+                            rm -rf /var/lib/jenkins/.cache/* || true
+                            
+                            echo "\nCleaning up Maven repository..."
+                            cd /var/lib/jenkins/.m2/repository/
+                            find . -type d -mtime +90 -exec rm -rf {} + || true
+                            
+                            echo "\nCleaning up current workspace..."
+                            cd ${WORKSPACE}
+                            rm -rf target/ .m2/ node_modules/ .gradle/ build/ dist/ || true
+                            
+                            echo "\nSpace reclaimed. Current status:"
+                            df -h /
+                            
+                            echo "\nRemaining large files:"
+                            find /var/lib/jenkins -type f -size +100M -exec ls -lh {} \\; 2>/dev/null || true
                         '''
                         
                         // Check disk space again after cleanup
                         def newDiskSpace = sh(script: "df -h / | tail -1 | awk '{print \$5}' | sed 's/%//'", returnStdout: true).trim()
-                        if (newDiskSpace.toInteger() > 80) {
-                            error "Disk space is still critically high (${newDiskSpace}%) after cleanup. Manual intervention required."
+                        if (newDiskSpace.toInteger() > 85) {
+                            error "Disk space is still critically high (${newDiskSpace}%) after cleanup.\nPlease check Jenkins server disk usage report in build log."
                         } else {
-                            echo "Cleanup successful. New disk usage: ${newDiskSpace}%"
+                            echo "Cleanup successful. Disk usage reduced from ${diskSpace}% to ${newDiskSpace}%"
                         }
-                    } else if (diskSpace.toInteger() > 70) {
-                        echo "Warning: Disk space is getting high (${diskSpace}%)"
+                    } else if (diskSpace.toInteger() > 80) {
+                        echo "Warning: Disk space is getting high (${diskSpace}%). Consider manual cleanup soon."
                     }
                 }
             }
